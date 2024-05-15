@@ -68,7 +68,7 @@ if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').match
 }
 
 document.querySelector('[data-list-button]').innerText = `Show more (${books.length - BOOKS_PER_PAGE})`
-document.querySelector('[data-list-button]').disabled = (matches.length - (page * BOOKS_PER_PAGE)) > 0
+document.querySelector('[data-list-button]').disabled = (matches.length - (page * BOOKS_PER_PAGE)) === 0
 
 document.querySelector('[data-list-button]').innerHTML = `
     <span>Show more</span>
@@ -170,14 +170,16 @@ document.querySelector('[data-search-form]').addEventListener('submit', (event) 
     document.querySelector('[data-list-items]').appendChild(newItems)
     document.querySelector('[data-list-button]').disabled = (matches.length - (page * BOOKS_PER_PAGE)) < 1
 
-    document.querySelector('[data-list-button]').innerHTML = `
-        <span>Show more</span>
-        <span class="list__remaining"> (${(matches.length - (page * BOOKS_PER_PAGE)) > 0 ? (matches.length - (page * BOOKS_PER_PAGE)) : 0})</span>
-    `
-
     window.scrollTo({top: 0, behavior: 'smooth'});
     document.querySelector('[data-search-overlay]').open = false
 })
+
+function remainingPages() {
+    document.querySelector('[data-list-button]').innerHTML = `
+    <span>Show more</span>
+    <span class="list__remaining"> (${(matches.length - (page * BOOKS_PER_PAGE)) > 0 ? (matches.length - (page * BOOKS_PER_PAGE)) : 0})</span>
+`
+}
 
 document.querySelector('[data-list-button]').addEventListener('click', () => {
     const fragment = document.createDocumentFragment()
@@ -204,6 +206,7 @@ document.querySelector('[data-list-button]').addEventListener('click', () => {
 
     document.querySelector('[data-list-items]').appendChild(fragment)
     page += 1
+    remainingPages()
 })
 
 document.querySelector('[data-list-items]').addEventListener('click', (event) => {
