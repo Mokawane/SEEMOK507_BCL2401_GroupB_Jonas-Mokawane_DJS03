@@ -58,8 +58,14 @@ for (const [id, name] of Object.entries(authors)) {
 document.querySelector('[data-search-authors]').appendChild(authorsHtml)
 
 function mediaMatch() {
-    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-        document.querySelector('[data-settings-theme]').value = 'night'
+    let theme = localStorage.getItem('theme');
+
+    if(!theme && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        theme = 'night';
+    }
+
+    if (theme === 'night') {
+        document.querySelector('[data-settings-theme]').value = 'night';
         document.documentElement.style.setProperty('--color-dark', '255, 255, 255');
         document.documentElement.style.setProperty('--color-light', '10, 10, 20');
     } else {
@@ -68,7 +74,28 @@ function mediaMatch() {
         document.documentElement.style.setProperty('--color-light', '255, 255, 255');
     }
 }
+
+function saveToLocalStorage(theme) {
+    localStorage.setItem('theme', theme);
+}
 mediaMatch();
+
+document.querySelector('[data-settings-form]').addEventListener('submit', (event) => {
+    event.preventDefault();
+    const formData = new FormData(event.target);
+    const {theme} = Object.fromEntries(formData);
+
+    if(theme === 'night') {
+        document.documentElement.style.setProperty('--color-dark', '255, 255, 255');
+        document.documentElement.style.setProperty('--color-light', '10, 10, 20');
+    } else {
+        document.documentElement.style.setProperty('--color-dark', '10, 10, 20');
+        document.documentElement.style.setProperty('--color-light', '255, 255, 255');
+    }
+
+    saveToLocalStorage(theme);
+    document.querySelector('[data-settings-overlay]').open = false;
+});
 
 function contentUpdates () {
     document.querySelector('[data-list-button]').innerText = `Show more (${books.length - BOOKS_PER_PAGE})`
@@ -118,7 +145,8 @@ document.querySelector('[data-settings-form]').addEventListener('submit', (event
     document.querySelector('[data-settings-overlay]').open = false
 })
 
-document.querySelector('[data-search-form]').addEventListener('submit', (event) => {
+function eventListeners() {
+    document.querySelector('[data-search-form]').addEventListener('submit', (event) => {
     event.preventDefault()
     const formData = new FormData(event.target)
     const filters = Object.fromEntries(formData)
@@ -178,7 +206,38 @@ document.querySelector('[data-search-form]').addEventListener('submit', (event) 
 
     window.scrollTo({top: 0, behavior: 'smooth'});
     document.querySelector('[data-search-overlay]').open = false
-})
+    })
+
+    document.querySelector('[data-list-items]').addEventListener('click', (event) => {
+        const pathArray = Array.from(event.path || event.composedPath())
+        let active = null
+    
+        for (const node of pathArray) {
+            if (active) break
+    
+            if (node?.dataset?.preview) {
+                let result = null
+        
+                for (const singleBook of books) {
+                    if (result) break;
+                    if (singleBook.id === node?.dataset?.preview) result = singleBook
+                } 
+            
+                active = result
+            }
+        }
+        
+        if (active) {
+            document.querySelector('[data-list-active]').open = true
+            document.querySelector('[data-list-blur]').src = active.image
+            document.querySelector('[data-list-image]').src = active.image
+            document.querySelector('[data-list-title]').innerText = active.title
+            document.querySelector('[data-list-subtitle]').innerText = `${authors[active.author]} (${new Date(active.published).getFullYear()})`
+            document.querySelector('[data-list-description]').innerText = active.description
+        }
+    })
+}
+eventListeners();
 
 function remainingPages() {
     document.querySelector('[data-list-button]').innerHTML = `
@@ -215,31 +274,3 @@ document.querySelector('[data-list-button]').addEventListener('click', () => {
     remainingPages()
 })
 
-document.querySelector('[data-list-items]').addEventListener('click', (event) => {
-    const pathArray = Array.from(event.path || event.composedPath())
-    let active = null
-
-    for (const node of pathArray) {
-        if (active) break
-
-        if (node?.dataset?.preview) {
-            let result = null
-    
-            for (const singleBook of books) {
-                if (result) break;
-                if (singleBook.id === node?.dataset?.preview) result = singleBook
-            } 
-        
-            active = result
-        }
-    }
-    
-    if (active) {
-        document.querySelector('[data-list-active]').open = true
-        document.querySelector('[data-list-blur]').src = active.image
-        document.querySelector('[data-list-image]').src = active.image
-        document.querySelector('[data-list-title]').innerText = active.title
-        document.querySelector('[data-list-subtitle]').innerText = `${authors[active.author]} (${new Date(active.published).getFullYear()})`
-        document.querySelector('[data-list-description]').innerText = active.description
-    }
-})
